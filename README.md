@@ -7,7 +7,7 @@ A dual-interface JSON tool built for **humans and AI agents** alike.
 
 Same binary. Two modes. One engine.
 
-[![CI](https://github.com/EricCaoGH/je/actions/workflows/ci.yml/badge.svg)](https://github.com/EricCaoGH/je/actions/workflows/ci.yml)
+[![CI](https://github.com/caoergou/je/actions/workflows/ci.yml/badge.svg)](https://github.com/caoergou/je/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -28,15 +28,26 @@ je config.json fix --strip-comments
 
 ## Installation
 
+### Pre-built binaries (recommended)
+
+Download from the [Releases](https://github.com/caoergou/je/releases) page, or use the install script:
+
+```bash
+# Linux / macOS — auto-detects platform and installs to /usr/local/bin
+curl -fsSL https://github.com/caoergou/je/releases/latest/download/install.sh | sh
+```
+
+### From crates.io
+
+```bash
+cargo install je-editor
+```
+
 ### From source (requires Rust)
 
 ```bash
-cargo install --git https://github.com/EricCaoGH/je
+cargo install --git https://github.com/caoergou/je
 ```
-
-### Pre-built binaries
-
-Download from the [Releases](https://github.com/EricCaoGH/je/releases) page:
 
 | Platform | Binary |
 |----------|--------|
@@ -45,6 +56,8 @@ Download from the [Releases](https://github.com/EricCaoGH/je/releases) page:
 | macOS x86_64 | `je-macos-x86_64` |
 | macOS Apple Silicon | `je-macos-aarch64` |
 | Windows x86_64 | `je-windows-x86_64.exe` |
+
+Place the binary somewhere on your `$PATH` and rename it to `je`.
 
 ---
 
@@ -194,7 +207,7 @@ Uses jq-inspired path syntax:
 ## Building from Source
 
 ```bash
-git clone https://github.com/EricCaoGH/je
+git clone https://github.com/caoergou/je
 cd je
 cargo build --release
 ./target/release/je --version
