@@ -634,20 +634,10 @@ impl App {
         }
     }
 
-    /// 复制文本到系统剪贴板。
+    /// 复制文本到系统剪贴板（跨平台）。
     fn copy_to_clipboard(&self, text: &str) -> Result<(), Box<dyn std::error::Error>> {
-        // 使用 \echo 绕过 alias 干扰
-        let escaped = text.replace('\'', "'\\''");
-        let result = std::process::Command::new("sh")
-            .args(["-c", &format!("\\echo -n '{}' | xclip -selection clipboard", escaped)])
-            .output();
-
-        // 尝试 wayland
-        if result.as_ref().map(|o| !o.status.success()).unwrap_or(true) {
-            std::process::Command::new("sh")
-                .args(["-c", &format!("\\echo -n '{}' | wl-copy", escaped)])
-                .output()?;
-        }
+        let mut clipboard = arboard::Clipboard::new()?;
+        clipboard.set_text(text)?;
         Ok(())
     }
 
