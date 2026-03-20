@@ -499,13 +499,14 @@ fn handle_mouse(app: &mut App, event: crossterm::event::MouseEvent) {
 
     // 检测双击：同一行 + 快速点击
     let now = Instant::now();
-    let is_double_click = app
-        .last_click_time
-        .zip(app.last_click_row)
-        .is_some_and(|(time, prev_row)| {
-            let elapsed = u64::try_from(now.duration_since(time).as_millis()).unwrap_or(u64::MAX);
-            prev_row == item_row && elapsed < DOUBLE_CLICK_MS
-        });
+    let is_double_click =
+        app.last_click_time
+            .zip(app.last_click_row)
+            .is_some_and(|(time, prev_row)| {
+                let elapsed =
+                    u64::try_from(now.duration_since(time).as_millis()).unwrap_or(u64::MAX);
+                prev_row == item_row && elapsed < DOUBLE_CLICK_MS
+            });
 
     // 如果点击在展开/折叠区域，且节点有子节点，则切换展开/折叠
     if click_col < toggle_width && line.has_children && !is_double_click {
