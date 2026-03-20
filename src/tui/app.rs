@@ -606,7 +606,7 @@ impl App {
                         let new_path = if path.is_empty() {
                             k.clone()
                         } else {
-                            format!("{}.{}", path, k)
+                            format!("{path}.{k}")
                         };
                         if matches!(v, JsonValue::Object(_) | JsonValue::Array(_)) {
                             paths.push(new_path.clone());
@@ -616,7 +616,7 @@ impl App {
                 }
                 JsonValue::Array(arr) => {
                     for (i, v) in arr.iter().enumerate() {
-                        let new_path = format!("{}[{}]", path, i);
+                        let new_path = format!("{path}[{i}]");
                         if matches!(v, JsonValue::Object(_) | JsonValue::Array(_)) {
                             paths.push(new_path.clone());
                             collect_paths(v, &new_path, paths);
