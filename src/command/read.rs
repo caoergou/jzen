@@ -6,6 +6,7 @@ use crate::{
         print_string_list, print_usize, read_file,
     },
     engine::{FormatOptions, PathError, exists, format_pretty, get, infer_schema, parse_lenient},
+    i18n::{get_locale, t_to},
 };
 
 /// `get <path>` — 输出路径处的值，Agent 友好（最小化输出）。
@@ -14,6 +15,7 @@ pub fn cmd_get(
     path: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (doc, _) = load_lenient(file)?;
     match get(&doc, path) {
         Ok(value) => {
@@ -21,18 +23,26 @@ pub fn cmd_get(
             Ok(exit_code::OK)
         }
         Err(PathError::KeyNotFound { key }) => {
-            print_error(&format!("路径未找到：key '{key}' 不存在"), json_output);
+            print_error(
+                &t_to("err.key_not_found", &locale).replace("{0}", &key),
+                json_output,
+            );
             Ok(exit_code::NOT_FOUND)
         }
         Err(PathError::IndexOutOfBounds { index, len }) => {
             print_error(
-                &format!("路径未找到：索引 {index} 越界（长度 {len}）"),
+                &t_to("err.index_oob", &locale)
+                    .replace("{0}", &index.to_string())
+                    .replace("{1}", &len.to_string()),
                 json_output,
             );
             Ok(exit_code::NOT_FOUND)
         }
         Err(e) => {
-            print_error(&format!("路径错误：{e}"), json_output);
+            print_error(
+                &t_to("err.path", &locale).replace("{0}", &e.to_string()),
+                json_output,
+            );
             Ok(exit_code::TYPE_MISMATCH)
         }
     }
@@ -44,11 +54,15 @@ pub fn cmd_keys(
     path: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (doc, _) = load_lenient(file)?;
     let node = match get(&doc, path) {
         Ok(v) => v,
         Err(e) => {
-            print_error(&format!("路径错误：{e}"), json_output);
+            print_error(
+                &t_to("err.path", &locale).replace("{0}", &e.to_string()),
+                json_output,
+            );
             return Ok(exit_code::NOT_FOUND);
         }
     };
@@ -64,7 +78,7 @@ pub fn cmd_keys(
         }
         other => {
             print_error(
-                &format!("类型错误：{} 没有 key", other.type_name()),
+                &t_to("err.type_no_keys", &locale).replace("{0}", other.type_name()),
                 json_output,
             );
             return Ok(exit_code::TYPE_MISMATCH);
@@ -79,11 +93,15 @@ pub fn cmd_len(
     path: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (doc, _) = load_lenient(file)?;
     let node = match get(&doc, path) {
         Ok(v) => v,
         Err(e) => {
-            print_error(&format!("路径错误：{e}"), json_output);
+            print_error(
+                &t_to("err.path", &locale).replace("{0}", &e.to_string()),
+                json_output,
+            );
             return Ok(exit_code::NOT_FOUND);
         }
     };
@@ -93,7 +111,7 @@ pub fn cmd_len(
         Ok(exit_code::OK)
     } else {
         print_error(
-            &format!("类型错误：{} 没有长度", node.type_name()),
+            &t_to("err.type_no_len", &locale).replace("{0}", node.type_name()),
             json_output,
         );
         Ok(exit_code::TYPE_MISMATCH)
@@ -106,6 +124,7 @@ pub fn cmd_type(
     path: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (doc, _) = load_lenient(file)?;
     match get(&doc, path) {
         Ok(v) => {
@@ -113,7 +132,10 @@ pub fn cmd_type(
             Ok(exit_code::OK)
         }
         Err(e) => {
-            print_error(&format!("路径错误：{e}"), json_output);
+            print_error(
+                &t_to("err.path", &locale).replace("{0}", &e.to_string()),
+                json_output,
+            );
             Ok(exit_code::NOT_FOUND)
         }
     }
@@ -125,6 +147,7 @@ pub fn cmd_exists(
     path: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (doc, _) = load_lenient(file)?;
     if exists(&doc, path) {
         if json_output {
@@ -135,7 +158,7 @@ pub fn cmd_exists(
         if json_output {
             println!(
                 "{}",
-                serde_json::json!({"ok": false, "error": "路径不存在"})
+                serde_json::json!({"ok": false, "error": t_to("err.path_not_exists", &locale)})
             );
         }
         Ok(exit_code::NOT_FOUND)

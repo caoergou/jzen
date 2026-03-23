@@ -7,6 +7,7 @@ use std::{fs, path::Path, process};
 use crate::{
     cli::Command,
     engine::{JsonValue, parse_lenient},
+    i18n::{get_locale, t_to},
 };
 
 /// 命令模式的统一退出码。
@@ -23,7 +24,7 @@ pub fn run(file: &Path, cmd: Command, json_output: bool) {
     match result {
         Ok(code) => process::exit(code),
         Err(e) => {
-            print_error(&format!("{e}"), json_output);
+            print_error(&e.to_string(), json_output);
             process::exit(exit_code::ERROR);
         }
     }
@@ -126,16 +127,26 @@ pub(crate) fn print_error(msg: &str, json_output: bool) {
 
 /// 读取文件内容，返回错误信息若文件不存在。
 pub(crate) fn read_file(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
-    fs::read_to_string(path).map_err(|e| format!("无法读取 '{}': {e}", path.display()).into())
+    let locale = get_locale();
+    fs::read_to_string(path).map_err(|e| {
+        t_to("err.read_failed", &locale)
+            .replace("{0}", &path.display().to_string())
+            .replace("{1}", &e.to_string())
+            .into()
+    })
 }
 
 /// 读取并宽松解析文件，返回文档和修复列表。
 pub(crate) fn load_lenient(
     path: &Path,
 ) -> Result<(JsonValue, Vec<crate::engine::Repair>), Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let content = read_file(path)?;
-    let output =
-        parse_lenient(&content).map_err(|e| format!("解析失败 '{}': {e}", path.display()))?;
+    let output = parse_lenient(&content).map_err(|e| {
+        t_to("err.parse_failed", &locale)
+            .replace("{0}", &path.display().to_string())
+            .replace("{1}", &e.to_string())
+    })?;
     Ok((output.value, output.repairs))
 }
 
@@ -144,8 +155,11 @@ pub(crate) fn write_file_atomic(
     path: &Path,
     content: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let tmp_path = path.with_extension("tmp");
-    fs::write(&tmp_path, content).map_err(|e| format!("写入临时文件失败: {e}"))?;
-    fs::rename(&tmp_path, path).map_err(|e| format!("重命名文件失败: {e}"))?;
+    fs::write(&tmp_path, content)
+        .map_err(|e| t_to("err.write_tmp_failed", &locale).replace("{0}", &e.to_string()))?;
+    fs::rename(&tmp_path, path)
+        .map_err(|e| t_to("err.rename_failed_file", &locale).replace("{0}", &e.to_string()))?;
     Ok(())
 }

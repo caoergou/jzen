@@ -3,6 +3,7 @@ use std::path::Path;
 use crate::{
     command::{exit_code, load_lenient, print_error, print_ok, write_file_atomic},
     engine::{FormatOptions, JsonValue, add, delete, format_pretty, move_value, set},
+    i18n::{get_locale, t_to},
 };
 
 /// `set <path> <value>` — 设置值，路径不存在时自动创建。
@@ -26,6 +27,7 @@ pub fn cmd_del(
     path: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (mut doc, _) = load_lenient(file)?;
     match delete(&mut doc, path) {
         Ok(_) => {
@@ -34,7 +36,10 @@ pub fn cmd_del(
             Ok(exit_code::OK)
         }
         Err(e) => {
-            print_error(&format!("删除失败：{e}"), json_output);
+            print_error(
+                &t_to("err.delete_failed", &locale).replace("{0}", &e.to_string()),
+                json_output,
+            );
             Ok(exit_code::NOT_FOUND)
         }
     }
@@ -75,10 +80,11 @@ pub fn cmd_patch(
     raw_ops: &str,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let (mut doc, _) = load_lenient(file)?;
 
     let ops: Vec<PatchOp> = serde_json::from_str(raw_ops)
-        .map_err(|e| format!("patch 格式无效（期望 JSON Patch RFC 6902 数组）: {e}"))?;
+        .map_err(|e| t_to("err.patch_format", &locale).replace("{0}", &e.to_string()))?;
 
     let mut applied = 0usize;
 
@@ -86,7 +92,9 @@ pub fn cmd_patch(
         let result = apply_patch_op(&mut doc, op);
         if let Err(e) = result {
             print_error(
-                &format!("patch 操作 #{} 失败，已回滚：{e}", applied + 1),
+                &t_to("err.patch_op_failed", &locale)
+                    .replace("{0}", &(applied + 1).to_string())
+                    .replace("{1}", &e.to_string()),
                 json_output,
             );
             return Ok(exit_code::ERROR);

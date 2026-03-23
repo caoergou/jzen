@@ -3,6 +3,7 @@ use std::path::Path;
 use crate::{
     command::{exit_code, load_lenient, print_error, print_ok, read_file, write_file_atomic},
     engine::{FormatOptions, fix_to_value, format_compact, format_pretty},
+    i18n::{get_locale, t_to},
 };
 
 /// `fmt` — 格式化（美化）JSON，原地修改。
@@ -13,8 +14,9 @@ pub fn cmd_fmt(
 ) -> Result<i32, Box<dyn std::error::Error>> {
     let (doc, repairs) = load_lenient(file)?;
     if !repairs.is_empty() {
+        let locale = get_locale();
         print_error(
-            &format!("文件含 {} 个格式问题，请先使用 `fix` 修复", repairs.len()),
+            &t_to("err.fmt_has_issues", &locale).replace("{0}", &repairs.len().to_string()),
             json_output,
         );
         return Ok(exit_code::ERROR);
@@ -39,15 +41,13 @@ pub fn cmd_fix(
     strip_comments: bool,
     json_output: bool,
 ) -> Result<i32, Box<dyn std::error::Error>> {
+    let locale = get_locale();
     let content = read_file(file)?;
 
     // 检查文件是否含注释
     let has_comments = content.contains("//") || content.contains("/*");
     if has_comments && !strip_comments {
-        print_error(
-            "文件含注释，使用 `--strip-comments` 剥离注释或手动处理",
-            json_output,
-        );
+        print_error(&t_to("err.has_comments", &locale), json_output);
         return Ok(exit_code::ERROR);
     }
 
@@ -64,7 +64,7 @@ pub fn cmd_fix(
     // dry-run: 只输出修复摘要
     if dry_run {
         if result.repairs.is_empty() {
-            print_ok("无需修复", json_output);
+            print_ok(&t_to("err.no_repairs_needed", &locale), json_output);
         } else {
             let summary: Vec<String> = result
                 .repairs
@@ -81,14 +81,20 @@ pub fn cmd_fix(
                 for s in &summary {
                     println!("{s}");
                 }
-                println!("共 {} 处修复", result.repairs.len());
+                println!(
+                    "{}",
+                    t_to("err.total_repairs", &locale)
+                        .replace("{0}", &result.repairs.len().to_string())
+                );
             }
         }
         return Ok(exit_code::OK);
     }
 
     // 实际写入
-    let value = result.value.ok_or("修复后无有效值")?;
+    let value = result
+        .value
+        .ok_or_else(|| t_to("err.no_value_after_fix", &locale))?;
     let content = format_pretty(
         &value,
         &FormatOptions {
