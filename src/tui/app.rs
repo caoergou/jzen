@@ -92,7 +92,6 @@ pub enum AppMode {
 pub enum ContextAction {
     Edit,
     AddChild,
-    AddSibling,
     Delete,
     CopyKey,
     CopyValue,
@@ -106,7 +105,6 @@ impl ContextAction {
         &[
             ContextAction::Edit,
             ContextAction::AddChild,
-            ContextAction::AddSibling,
             ContextAction::Delete,
             ContextAction::CopyKey,
             ContextAction::CopyValue,
@@ -122,13 +120,26 @@ impl ContextAction {
         match self {
             ContextAction::Edit => t_to("tui.action.edit", &locale),
             ContextAction::AddChild => t_to("tui.action.add_child", &locale),
-            ContextAction::AddSibling => t_to("tui.action.add_sibling", &locale),
             ContextAction::Delete => t_to("tui.action.delete", &locale),
             ContextAction::CopyKey => t_to("tui.action.copy_key", &locale),
             ContextAction::CopyValue => t_to("tui.action.copy_value", &locale),
             ContextAction::CopyPath => t_to("tui.action.copy_path", &locale),
             ContextAction::ExpandAll => t_to("tui.action.expand_all", &locale),
             ContextAction::CollapseAll => t_to("tui.action.collapse_all", &locale),
+        }
+    }
+
+    /// 获取操作对应的快捷键（单个字符）
+    pub fn shortcut(&self) -> char {
+        match self {
+            ContextAction::Edit => 'e',
+            ContextAction::AddChild => 'a',
+            ContextAction::Delete => 'd',
+            ContextAction::CopyKey => 'c',
+            ContextAction::CopyValue => 'v',
+            ContextAction::CopyPath => 'p',
+            ContextAction::ExpandAll => '*',
+            ContextAction::CollapseAll => '-',
         }
     }
 }
@@ -616,20 +627,6 @@ impl App {
             ContextAction::AddChild => {
                 self.mode = AppMode::Normal;
                 self.start_add_node();
-            }
-            ContextAction::AddSibling => {
-                // 添加兄弟节点：先获取父节点路径
-                self.mode = AppMode::Normal;
-                if let Some(parent) = line.path.rfind('.') {
-                    let parent_path = &line.path[..parent];
-                    if !parent_path.is_empty() {
-                        // TODO: 实现添加兄弟节点
-                        self.set_status(
-                            &t_to("tui.status.add_sibling_wip", &get_locale()),
-                            StatusLevel::Info,
-                        );
-                    }
-                }
             }
             ContextAction::Delete => {
                 self.delete_current();

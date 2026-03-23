@@ -479,10 +479,9 @@ fn handle_context_menu(app: &mut App, key: KeyEvent) {
                 *selected += 1;
             }
         }
-        // 快捷键直接执行 (注意: k 已用于向上导航)
+        // 快捷键直接执行
         KeyCode::Char('e') => app.execute_context_action(ContextAction::Edit),
         KeyCode::Char('a') => app.execute_context_action(ContextAction::AddChild),
-        KeyCode::Char('s') => app.execute_context_action(ContextAction::AddSibling),
         KeyCode::Char('d') => app.execute_context_action(ContextAction::Delete),
         KeyCode::Char('c') => app.execute_context_action(ContextAction::CopyKey),
         KeyCode::Char('v') => app.execute_context_action(ContextAction::CopyValue),

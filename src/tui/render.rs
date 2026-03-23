@@ -206,64 +206,65 @@ fn render_statusbar(frame: &mut Frame, app: &App, area: Rect, _lines: &[TreeLine
 
 /// 底部快捷键提示条
 fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
+    let locale = get_locale();
     let mod_key = modifier_key();
     let save_key = format!("{}+S", mod_key);
     let hints = match &app.mode {
         AppMode::Normal => vec![
-            ("[↑↓]", "移动"),
-            ("[Enter]", "编辑"),
-            ("[Space]", "展开"),
-            ("[N]", "新建"),
-            ("[/]", "搜索"),
-            (&save_key, "保存"),
-            ("[F1]", "帮助"),
+            ("↑↓", t_to("tui.hint.move", &locale)),
+            ("Enter", t_to("tui.hint.edit", &locale)),
+            ("Space", t_to("tui.hint.expand", &locale)),
+            ("N", t_to("tui.hint.new", &locale)),
+            ("/", t_to("tui.hint.search_key", &locale)),
+            (&save_key, t_to("tui.hint.save", &locale)),
+            ("F1", t_to("tui.hint.help", &locale)),
         ],
         AppMode::Edit { value_type, .. } => {
             if *value_type == "boolean" {
                 vec![
-                    ("Tab", "切换"),
-                    ("Enter", "确认"),
-                    ("Esc", "取消"),
+                    ("Tab", t_to("tui.hint.toggle", &locale)),
+                    ("Enter", t_to("tui.hint.confirm", &locale)),
+                    ("Esc", t_to("tui.hint.cancel", &locale)),
                 ]
             } else {
                 vec![
-                    ("Enter", "确认"),
-                    ("Esc", "取消"),
+                    ("Enter", t_to("tui.hint.confirm", &locale)),
+                    ("Esc", t_to("tui.hint.cancel", &locale)),
                 ]
             }
         }
         AppMode::EditKey { .. } => vec![
-            ("Enter", "确认"),
-            ("Esc", "取消"),
+            ("Enter", t_to("tui.hint.confirm", &locale)),
+            ("Esc", t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::Search { .. } => vec![
-            ("Enter", "下一匹配"),
-            ("Esc", "退出"),
+            ("Enter", t_to("tui.hint.next_match", &locale)),
+            ("Esc", t_to("tui.hint.exit", &locale)),
         ],
         AppMode::AddNode { .. } => vec![
-            ("Enter", "确认"),
-            ("Esc", "取消"),
+            ("Enter", t_to("tui.hint.confirm", &locale)),
+            ("Esc", t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::ConfirmStripComments => vec![
-            ("Y", "确认"),
-            ("N", "取消"),
+            ("Y", t_to("tui.hint.confirm", &locale)),
+            ("N", t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::Help => vec![
-            ("F1/Esc", "关闭"),
+            ("F1/Esc", t_to("tui.hint.close", &locale)),
         ],
         AppMode::ConfirmQuit { .. } => vec![
-            ("[Y]", "保存退出"),
-            ("[N]", "不保存退出"),
-            ("[C]/Esc", "取消"),
+            ("Y", t_to("tui.hint.save_quit", &locale)),
+            ("N", t_to("tui.hint.no_save_quit", &locale)),
+            ("C/Esc", t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::ConfirmSave { .. } => vec![
-            ("Enter", "保存"),
-            ("Esc", "取消"),
+            ("Enter", t_to("tui.hint.save", &locale)),
+            ("Esc", t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::ContextMenu { .. } => vec![
-            ("↑↓", "选择"),
-            ("Enter", "执行"),
-            ("Esc", "退出"),
+            ("↑↓", t_to("tui.hint.select", &locale)),
+            ("Enter", t_to("tui.hint.execute", &locale)),
+            ("Esc", t_to("tui.hint.exit", &locale)),
         ],
     };
 
@@ -586,11 +587,36 @@ fn render_confirm_quit_overlay(frame: &mut Frame, area: Rect) {
 // ── 帮助面板覆盖层 ───────────────────────────────────────────────────────────
 
 fn render_help_panel(frame: &mut Frame, area: Rect) {
+    let locale = get_locale();
     let mod_key = modifier_key();
     let save_key = format!("{}+S", mod_key).replace("+", "");
     let undo_key = format!("{}+Z", mod_key).replace("+", "");
     let redo_key = format!("{}+Y", mod_key).replace("+", "");
     let quit_key = format!("{}+Q", mod_key).replace("+", "");
+
+    // i18n 文本
+    let title = t_to("tui.help.title", &locale);
+    let help_title = t_to("tui.help.help_title", &locale);
+    let nav = t_to("tui.help.nav", &locale);
+    let edit = t_to("tui.help.edit", &locale);
+    let file = t_to("tui.help.file", &locale);
+    let close_help = t_to("tui.help.close_help", &locale);
+
+    let save = t_to("tui.help.save", &locale);
+    let undo = t_to("tui.help.undo", &locale);
+    let redo = t_to("tui.help.redo", &locale);
+    let quit = t_to("tui.help.quit", &locale);
+
+    let move_up_down = t_to("tui.help.move_up_down", &locale);
+    let collapse_expand = t_to("tui.help.collapse_expand", &locale);
+    let toggle_expand = t_to("tui.help.toggle_expand", &locale);
+    let quick_scroll = t_to("tui.help.quick_scroll", &locale);
+    let jump_begin_end = t_to("tui.help.jump_begin_end", &locale);
+    let edit_value = t_to("tui.help.edit_value", &locale);
+    let new_node = t_to("tui.help.new_node", &locale);
+    let delete_node = t_to("tui.help.delete_node", &locale);
+    let toggle_bool = t_to("tui.help.toggle_bool", &locale);
+    let search = t_to("tui.help.search", &locale);
 
     let overlay_width = 50u16;
     let overlay_height = 21u16;
@@ -609,42 +635,42 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
     frame.render_widget(Clear, overlay_area);
 
     // 预创建带快捷键的字符串
-    let save_line = format!("    [{:^8}]      保存", save_key);
-    let undo_line = format!("    [{:^8}]      撤销", undo_key);
-    let redo_line = format!("    [{:^8}]      重做", redo_key);
-    let quit_line = format!("    [{:^8}]      退出 (连续按两次)", quit_key);
+    let save_line = format!("    [{:^8}]      {save}", save_key);
+    let undo_line = format!("    [{:^8}]      {undo}", undo_key);
+    let redo_line = format!("    [{:^8}]      {redo}", redo_key);
+    let quit_line = format!("    [{:^8}]      {quit}", quit_key);
 
     let help_content: Vec<Line> = vec![
         Line::from(""),
-        Line::from(Span::styled("  快捷键帮助", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD).add_modifier(Modifier::UNDERLINED))),
+        Line::from(Span::styled(format!("  {help_title}"), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD).add_modifier(Modifier::UNDERLINED))),
         Line::from(""),
-        Line::from(Span::styled("  导航", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
-        Line::from(Span::styled("    [↑] / [↓]      上下移动", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [←] / [→]      折叠 / 展开或进入子节点", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [Space]        切换展开 / 折叠", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [PgUp]/[PgDn]  快速滚动 (一次10行)", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [Home]/[End]   跳到开头 / 末尾", Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("  {nav}"), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(format!("    [↑] / [↓]      {move_up_down}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [←] / [→]      {collapse_expand}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [Space]        {toggle_expand}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [PgUp]/[PgDn]  {quick_scroll}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [Home]/[End]   {jump_begin_end}"), Style::default().fg(Color::White))),
         Line::from(""),
-        Line::from(Span::styled("  编辑", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
-        Line::from(Span::styled("    [Enter]        编辑值 / 展开节点", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [N]            新建节点", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [Delete]       删除节点", Style::default().fg(Color::White))),
-        Line::from(Span::styled("    [Tab]          编辑布尔值时切换 true/false", Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("  {edit}"), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(format!("    [Enter]        {edit_value}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [N]            {new_node}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [Delete]       {delete_node}"), Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("    [Tab]          {toggle_bool}"), Style::default().fg(Color::White))),
         Line::from(""),
-        Line::from(Span::styled("  文件", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
-        Line::from(Span::styled("    [/]            搜索", Style::default().fg(Color::White))),
+        Line::from(Span::styled(format!("  {file}"), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(format!("    [/]            {search}"), Style::default().fg(Color::White))),
         Line::from(Span::styled(save_line, Style::default().fg(Color::White))),
         Line::from(Span::styled(undo_line, Style::default().fg(Color::White))),
         Line::from(Span::styled(redo_line, Style::default().fg(Color::White))),
         Line::from(Span::styled(quit_line, Style::default().fg(Color::White))),
         Line::from(""),
-        Line::from(Span::styled("  按 [F1] / [Esc] / [Enter] 关闭帮助", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(close_help, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
     ];
 
     let para = Paragraph::new(help_content)
         .block(
             Block::default()
-                .title(" 帮助 ")
+                .title(format!(" {title} "))
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Cyan)),
         )
@@ -755,6 +781,7 @@ fn render_context_menu(frame: &mut Frame, app: &App, area: Rect) {
         return;
     };
 
+    let locale = get_locale();
     let actions = ContextAction::all();
     // 菜单宽度增加以容纳快捷键提示
     let menu_width = 34u16;
@@ -784,19 +811,6 @@ fn render_context_menu(frame: &mut Frame, app: &App, area: Rect) {
     // 悬停效果优先于键盘选中
     let hover_row = app.menu_hover_row;
 
-    // 快捷键映射
-    let shortcuts = [
-        ("E", "dit"),
-        ("A", "ddChild"),
-        ("S", "ddSibling"),
-        ("D", "elete"),
-        ("C", "opyKey"),
-        ("V", "opyValue"),
-        ("P", "opyPath"),
-        ("*", "xpandAll"),
-        ("-", "ollapseAll"),
-    ];
-
     let items: Vec<ListItem> = actions
         .iter()
         .enumerate()
@@ -804,7 +818,7 @@ fn render_context_menu(frame: &mut Frame, app: &App, area: Rect) {
             let is_hovered = hover_row == Some(i);
             let is_selected = hover_row.is_none() && i == *selected;
 
-            let (shortcut, _rest) = shortcuts[i];
+            let shortcut = action.shortcut();
 
             let style = if is_hovered {
                 Style::default()
@@ -838,10 +852,11 @@ fn render_context_menu(frame: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
+    let actions_label = t_to("tui.confirm.actions", &locale);
     let menu = List::new(items)
         .block(
             Block::default()
-                .title(" Actions ")
+                .title(actions_label)
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Blue))
                 .style(Style::default().bg(Color::Black)),
