@@ -5,7 +5,7 @@ use crate::{
         exit_code, load_lenient, print_error, print_json_value, print_ok, print_str,
         print_string_list, print_usize, read_file,
     },
-    engine::{FormatOptions, PathError, exists, format_pretty, get, infer_schema, parse_lenient},
+    engine::{FormatOptions, JsonValue, PathError, exists, format_pretty, get, infer_schema, parse_lenient},
     i18n::{get_locale, t_to},
 };
 
@@ -168,8 +168,49 @@ pub fn cmd_exists(
 /// `schema` — 推断并输出文件结构（不含实际值）。
 pub fn cmd_schema(file: &Path, json_output: bool) -> Result<i32, Box<dyn std::error::Error>> {
     let (doc, _) = load_lenient(file)?;
-    print_str(&infer_schema(&doc), json_output);
+
+    // JSON 模式输出标准 JSON Schema 格式
+    if json_output {
+        let schema = build_json_schema(&doc);
+        println!("{}", serde_json::to_string(&schema).unwrap_or_default());
+    } else {
+        // 人类友好的简洁格式
+        print_str(&infer_schema(&doc), json_output);
+    }
     Ok(exit_code::OK)
+}
+
+/// 构建标准 JSON Schema 格式
+fn build_json_schema(value: &JsonValue) -> serde_json::Value {
+    match value {
+        JsonValue::Null => serde_json::json!({"type": "null"}),
+        JsonValue::Bool(_) => serde_json::json!({"type": "boolean"}),
+        JsonValue::Number(_) => serde_json::json!({"type": "number"}),
+        JsonValue::String(_) => serde_json::json!({"type": "string"}),
+        JsonValue::Array(arr) => {
+            if arr.is_empty() {
+                serde_json::json!({"type": "array", "items": {}})
+            } else {
+                // 取第一个元素的类型作为参考
+                let items = if !arr.is_empty() {
+                    build_json_schema(&arr[0])
+                } else {
+                    serde_json::json!({})
+                };
+                serde_json::json!({"type": "array", "items": items})
+            }
+        }
+        JsonValue::Object(map) => {
+            let mut props = serde_json::Map::new();
+            for (k, v) in map {
+                props.insert(k.clone(), build_json_schema(v));
+            }
+            serde_json::json!({
+                "type": "object",
+                "properties": props
+            })
+        }
+    }
 }
 
 /// `check` — 校验 JSON，成功无输出，错误输出到 stderr。

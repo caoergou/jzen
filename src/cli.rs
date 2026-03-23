@@ -6,129 +6,227 @@ use clap_complete::Shell;
 #[derive(Debug, Parser)]
 #[command(
     name = "jed",
-    about = "Jed — JSON 编辑器：同时为人类和 AI Agent 设计的双接口工具",
-    version
+    about = "Jed — JSON editor: dual-interface tool for humans and AI agents",
+    version,
+    disable_help_flag = true,
+    disable_help_subcommand = true,
 )]
 pub struct Cli {
-    /// 要操作的 JSON 文件（completions 子命令不需要此参数）
+    /// JSON 文件（位置参数）
+    #[arg(default_value = "-", hide_default_value = true)]
     pub file: Option<PathBuf>,
 
-    /// 以 JSON 格式输出结果（适合机器解析）
-    #[arg(long, global = true)]
+    /// 以 JSON 格式输出结果
+    #[arg(short, long)]
     pub json: bool,
+
+    /// 输出语言: en, zh-CN, zh-TW
+    #[arg(long, value_parser = ["en", "zh-CN", "zh-TW"])]
+    pub lang: Option<String>,
+
+    /// 静默模式
+    #[arg(short, long)]
+    pub quiet: bool,
+
+    /// 显示帮助
+    #[arg(long, short = 'h', action = clap::ArgAction::Count)]
+    pub help: u8,
 
     #[command(subcommand)]
     pub command: Option<Command>,
 }
 
-#[derive(Debug, Subcommand)]
+impl Cli {
+    /// 获取有效的文件路径
+    pub fn get_file(&self) -> Option<PathBuf> {
+        self.file.clone()
+    }
+}
+
+/// 获取命令的文件参数（优先使用全局 --file，子命令后的位置参数，或默认值）
+pub fn resolve_file(
+    cli_file: Option<&PathBuf>,
+    cmd_file: Option<&PathBuf>,
+) -> Option<PathBuf> {
+    // 1. 全局 --file
+    if let Some(f) = cli_file {
+        if f.to_str() != Some("-") {
+            return Some(f.clone());
+        }
+    }
+    // 2. 子命令位置参数
+    if let Some(f) = cmd_file {
+        if f.to_str() != Some("-") {
+            return Some(f.clone());
+        }
+    }
+    // 3. 默认 stdin
+    None
+}
+
+#[derive(Debug, Clone, Subcommand)]
 pub enum Command {
-    /// 获取路径处的值（Agent 友好：只输出目标值）
+    /// 获取路径处的值（Agent 友好）
     Get {
-        /// 路径，例如 .key 或 .arr[0].field
         path: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 列出对象的所有 key 或数组的所有索引
+    /// 列出所有 key 或索引
     Keys {
-        /// 路径（默认为根 `.`）
         #[arg(default_value = ".")]
         path: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 返回数组长度或对象 key 数量
+    /// 返回数组长度或 key 数量
     Len {
-        /// 路径（默认为根 `.`）
         #[arg(default_value = ".")]
         path: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 返回路径处值的类型
+    /// 返回值的类型
     Type {
-        /// 路径（默认为根 `.`）
         #[arg(default_value = ".")]
         path: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 检查路径是否存在（exit 0=存在，exit 2=不存在）
+    /// 检查路径是否存在
     Exists {
-        /// 路径
         path: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 推断并输出文件结构（不含实际值）
-    Schema,
+    /// 推断文件结构
+    Schema {
+        #[arg(default_value = "-")]
+        file: PathBuf,
+    },
 
-    /// 校验 JSON 格式，错误输出到 stderr
-    Check,
+    /// 校验 JSON 格式
+    Check {
+        #[arg(default_value = "-")]
+        file: PathBuf,
+    },
 
-    /// 设置路径处的值（路径不存在时自动创建）
+    /// 设置值
     Set {
-        /// 路径
         path: String,
-        /// JSON 值（字符串、数字、true/false/null 或 JSON 对象/数组）
         value: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 删除路径处的 key 或数组元素
+    /// 删除
     Del {
-        /// 路径
         path: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 向数组追加元素，或向对象合并字段
+    /// 追加
     Add {
-        /// 路径（默认为根 `.`）
         #[arg(default_value = ".")]
         path: String,
-        /// JSON 值
         value: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 一次性批量操作（JSON Patch RFC 6902 格式）
+    /// 批量操作
     Patch {
-        /// JSON Patch 操作数组
         operations: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 移动/重命名 key
+    /// 移动/重命名
     Mv {
-        /// 源路径
         src: String,
-        /// 目标路径
         dst: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 格式化（美化）JSON 文件，原地修改
+    /// 格式化
     Fmt {
-        /// 缩进空格数
         #[arg(long, default_value_t = 2)]
         indent: usize,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 自动修复 JSON 格式错误，然后格式化
+    /// 自动修复
     Fix {
-        /// 预览将修复的内容，不实际写入
         #[arg(long)]
         dry_run: bool,
-
-        /// 若文件含注释则剥离（否则报错）
         #[arg(long)]
         strip_comments: bool,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 压缩 JSON（移除所有空白），原地修改
-    Minify,
+    /// 压缩
+    Minify {
+        #[arg(default_value = "-")]
+        file: PathBuf,
+    },
 
-    /// 对比两个 JSON 文件的结构差异
+    /// 对比差异
     Diff {
-        /// 另一个 JSON 文件
         other: PathBuf,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 
-    /// 生成 shell 自动补全脚本
+    /// 列出所有命令
+    Commands,
+
+    /// 命令帮助
+    Explain {
+        command: String,
+    },
+
+    /// 补全脚本
     Completions {
-        /// Shell 类型
         shell: Shell,
+    },
+
+    /// 树形展示
+    Tree {
+        #[arg(default_value = "-")]
+        file: PathBuf,
+        #[arg(long, short)]
+        expand_all: bool,
+        #[arg(long, short = 'p')]
+        path: Option<String>,
+    },
+
+    /// 查询过滤
+    Query {
+        filter: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
+    },
+
+    /// Schema 验证
+    Validate {
+        schema: PathBuf,
+        #[arg(default_value = "-")]
+        file: PathBuf,
+    },
+
+    /// 格式转换
+    Convert {
+        format: String,
+        #[arg(default_value = "-")]
+        file: PathBuf,
     },
 }
