@@ -7,6 +7,7 @@ use crate::engine::{
     FormatOptions, JsonValue, add as engine_add, delete as engine_delete, format_pretty, get,
     parse_lenient, rename_key, set as engine_set,
 };
+use crate::i18n::{get_locale, t_to};
 
 use super::tree::{TreeLine, flatten};
 
@@ -99,17 +100,19 @@ impl ContextAction {
         ]
     }
 
-    pub fn label(self) -> &'static str {
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn label(&self) -> String {
+        let locale = get_locale();
         match self {
-            ContextAction::Edit => "编辑",
-            ContextAction::AddChild => "添加子级",
-            ContextAction::AddSibling => "添加兄弟",
-            ContextAction::Delete => "删除",
-            ContextAction::CopyKey => "复制 Key",
-            ContextAction::CopyValue => "复制 Value",
-            ContextAction::CopyPath => "复制路径",
-            ContextAction::ExpandAll => "展开全部",
-            ContextAction::CollapseAll => "折叠全部",
+            ContextAction::Edit => t_to("tui.action.edit", &locale),
+            ContextAction::AddChild => t_to("tui.action.add_child", &locale),
+            ContextAction::AddSibling => t_to("tui.action.add_sibling", &locale),
+            ContextAction::Delete => t_to("tui.action.delete", &locale),
+            ContextAction::CopyKey => t_to("tui.action.copy_key", &locale),
+            ContextAction::CopyValue => t_to("tui.action.copy_value", &locale),
+            ContextAction::CopyPath => t_to("tui.action.copy_path", &locale),
+            ContextAction::ExpandAll => t_to("tui.action.expand_all", &locale),
+            ContextAction::CollapseAll => t_to("tui.action.collapse_all", &locale),
         }
     }
 }
@@ -160,11 +163,19 @@ pub struct App {
 impl App {
     /// 从文件路径创建 App，完成初始解析。
     pub fn from_file(path: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(&path)
-            .map_err(|e| format!("无法读取 '{}': {e}", path.display()))?;
+        let locale = get_locale();
+        let content = std::fs::read_to_string(&path).map_err(|e| {
+            t_to("err.read_failed", &locale)
+                .replace("{0}", &path.display().to_string())
+                .replace("{1}", &e.to_string())
+        })?;
 
         let has_comments = content.contains("//") || content.contains("/*");
-        let output = parse_lenient(&content).map_err(|e| format!("解析失败: {e}"))?;
+        let output = parse_lenient(&content).map_err(|e| {
+            t_to("err.parse_failed", &locale)
+                .replace("{0}", &path.display().to_string())
+                .replace("{1}", &e.to_string())
+        })?;
 
         // 默认展开根节点
         let mut expanded = HashSet::new();
@@ -305,7 +316,7 @@ impl App {
         };
         if line.path.starts_with("__close__") || line.has_children {
             self.set_status(
-                "只能编辑基本类型的值（string/number/boolean/null）",
+                &t_to("tui.status.edit_value_only", &get_locale()),
                 StatusLevel::Warn,
             );
             return;
@@ -358,10 +369,13 @@ impl App {
 
         self.snapshot();
         if let Err(e) = engine_set(&mut self.doc, &path, new_val) {
-            self.set_status(&format!("编辑失败：{e}"), StatusLevel::Error);
+            self.set_status(
+                &t_to("err.edit_failed", &get_locale()).replace("{0}", &e.to_string()),
+                StatusLevel::Error,
+            );
         } else {
             self.modified = true;
-            self.set_status("已更新", StatusLevel::Info);
+            self.set_status(&t_to("status.updated", &get_locale()), StatusLevel::Info);
         }
         self.mode = AppMode::Normal;
     }
@@ -385,7 +399,10 @@ impl App {
 
         // 不能编辑根节点
         if line.path == "." {
-            self.set_status("不能重命名根节点", StatusLevel::Warn);
+            self.set_status(
+                &t_to("tui.status.cannot_rename_root", &get_locale()),
+                StatusLevel::Warn,
+            );
             return;
         }
 
@@ -399,7 +416,10 @@ impl App {
 
         // 检查是否是数组索引（不能重命名）
         if old_key.starts_with('[') && old_key.ends_with(']') {
-            self.set_status("数组索引不能重命名", StatusLevel::Warn);
+            self.set_status(
+                &t_to("tui.status.cannot_rename_index", &get_locale()),
+                StatusLevel::Warn,
+            );
             return;
         }
 
@@ -427,7 +447,10 @@ impl App {
 
         let new_key = buffer.trim();
         if new_key.is_empty() {
-            self.set_status("key 不能为空", StatusLevel::Warn);
+            self.set_status(
+                &t_to("tui.status.key_empty", &get_locale()),
+                StatusLevel::Warn,
+            );
             return;
         }
 
@@ -439,7 +462,10 @@ impl App {
 
         self.snapshot();
         if let Err(e) = rename_key(&mut self.doc, &path, new_key) {
-            self.set_status(&format!("重命名失败：{e}"), StatusLevel::Error);
+            self.set_status(
+                &t_to("err.rename_failed", &get_locale()).replace("{0}", &e.to_string()),
+                StatusLevel::Error,
+            );
         } else {
             self.modified = true;
             // 更新展开状态的路径（如果路径被展开）
@@ -455,7 +481,7 @@ impl App {
                 self.expanded.insert(new_path);
             }
 
-            self.set_status("已重命名", StatusLevel::Info);
+            self.set_status(&t_to("status.renamed", &get_locale()), StatusLevel::Info);
         }
         self.mode = AppMode::Normal;
     }
@@ -468,7 +494,10 @@ impl App {
             return;
         };
         if line.path == "." || line.path.starts_with("__close__") {
-            self.set_status("不能删除根节点", StatusLevel::Warn);
+            self.set_status(
+                &t_to("tui.status.cannot_delete_root", &get_locale()),
+                StatusLevel::Warn,
+            );
             return;
         }
         let path = line.path.clone();
@@ -482,9 +511,12 @@ impl App {
                     self.cursor = new_len - 1;
                     self.list_state.select(Some(self.cursor));
                 }
-                self.set_status(&format!("已删除 {path}"), StatusLevel::Info);
+                self.set_status(&t_to("status.deleted", &get_locale()), StatusLevel::Info);
             }
-            Err(e) => self.set_status(&format!("删除失败：{e}"), StatusLevel::Error),
+            Err(e) => self.set_status(
+                &t_to("err.delete_failed", &get_locale()).replace("{0}", &e.to_string()),
+                StatusLevel::Error,
+            ),
         }
     }
 
@@ -507,6 +539,7 @@ impl App {
     }
 
     /// 执行右键菜单操作。
+    #[allow(clippy::too_many_lines)]
     pub fn execute_context_action(&mut self, action: ContextAction) {
         let lines = self.tree_lines();
         let Some(line) = lines.get(self.cursor) else {
@@ -530,7 +563,10 @@ impl App {
                     let parent_path = &line.path[..parent];
                     if !parent_path.is_empty() {
                         // TODO: 实现添加兄弟节点
-                        self.set_status("添加兄弟节点功能开发中", StatusLevel::Info);
+                        self.set_status(
+                            &t_to("tui.status.add_sibling_wip", &get_locale()),
+                            StatusLevel::Info,
+                        );
                     }
                 }
             }
@@ -543,11 +579,18 @@ impl App {
                 // 复制 key（如果是对象键）
                 let key = &line.display_key;
                 if key.is_empty() {
-                    self.set_status("当前节点没有 key", StatusLevel::Warn);
+                    self.set_status(&t_to("tui.status.no_key", &get_locale()), StatusLevel::Warn);
                 } else if let Err(e) = Self::copy_to_clipboard(key) {
-                    self.set_status(&format!("复制失败：{e}"), StatusLevel::Error);
+                    self.set_status(
+                        &t_to("tui.status.copy_failed", &get_locale())
+                            .replace("{0}", &e.to_string()),
+                        StatusLevel::Error,
+                    );
                 } else {
-                    self.set_status(&format!("已复制 key: {key}"), StatusLevel::Info);
+                    self.set_status(
+                        &t_to("tui.status.copied_key", &get_locale()).replace("{0}", key),
+                        StatusLevel::Info,
+                    );
                 }
                 self.mode = AppMode::Normal;
             }
@@ -555,11 +598,21 @@ impl App {
                 // 复制 value
                 let value = &line.value_preview;
                 if value.is_empty() {
-                    self.set_status("当前节点没有 value", StatusLevel::Warn);
+                    self.set_status(
+                        &t_to("tui.status.no_value", &get_locale()),
+                        StatusLevel::Warn,
+                    );
                 } else if let Err(e) = Self::copy_to_clipboard(value) {
-                    self.set_status(&format!("复制失败：{e}"), StatusLevel::Error);
+                    self.set_status(
+                        &t_to("tui.status.copy_failed", &get_locale())
+                            .replace("{0}", &e.to_string()),
+                        StatusLevel::Error,
+                    );
                 } else {
-                    self.set_status("已复制 value", StatusLevel::Info);
+                    self.set_status(
+                        &t_to("tui.status.copied_value", &get_locale()),
+                        StatusLevel::Info,
+                    );
                 }
                 self.mode = AppMode::Normal;
             }
@@ -567,20 +620,33 @@ impl App {
                 // 复制 JSONPath
                 let path = format!("$.{}", line.path.strip_prefix('.').unwrap_or(&line.path));
                 if let Err(e) = Self::copy_to_clipboard(&path) {
-                    self.set_status(&format!("复制失败：{e}"), StatusLevel::Error);
+                    self.set_status(
+                        &t_to("tui.status.copy_failed", &get_locale())
+                            .replace("{0}", &e.to_string()),
+                        StatusLevel::Error,
+                    );
                 } else {
-                    self.set_status(&format!("已复制路径: {path}"), StatusLevel::Info);
+                    self.set_status(
+                        &t_to("tui.status.copied_path", &get_locale()).replace("{0}", &path),
+                        StatusLevel::Info,
+                    );
                 }
                 self.mode = AppMode::Normal;
             }
             ContextAction::ExpandAll => {
                 self.expand_all();
-                self.set_status("已展开全部节点", StatusLevel::Info);
+                self.set_status(
+                    &t_to("tui.status.expanded_all", &get_locale()),
+                    StatusLevel::Info,
+                );
                 self.mode = AppMode::Normal;
             }
             ContextAction::CollapseAll => {
                 self.collapse_all();
-                self.set_status("已折叠全部节点", StatusLevel::Info);
+                self.set_status(
+                    &t_to("tui.status.collapsed_all", &get_locale()),
+                    StatusLevel::Info,
+                );
                 self.mode = AppMode::Normal;
             }
         }
@@ -647,9 +713,12 @@ impl App {
             self.doc = prev;
             self.modified = true;
             self.clamp_cursor();
-            self.set_status("已撤销", StatusLevel::Info);
+            self.set_status(&t_to("tui.status.undone", &get_locale()), StatusLevel::Info);
         } else {
-            self.set_status("没有可撤销的操作", StatusLevel::Warn);
+            self.set_status(
+                &t_to("tui.status.no_undo", &get_locale()),
+                StatusLevel::Warn,
+            );
         }
     }
 
@@ -659,9 +728,12 @@ impl App {
             self.doc = next;
             self.modified = true;
             self.clamp_cursor();
-            self.set_status("已重做", StatusLevel::Info);
+            self.set_status(&t_to("tui.status.redone", &get_locale()), StatusLevel::Info);
         } else {
-            self.set_status("没有可重做的操作", StatusLevel::Warn);
+            self.set_status(
+                &t_to("tui.status.no_redo", &get_locale()),
+                StatusLevel::Warn,
+            );
         }
     }
 
@@ -688,9 +760,12 @@ impl App {
         match crate::command::write_file_atomic(&self.file_path, &content) {
             Ok(()) => {
                 self.modified = false;
-                self.set_status("已保存", StatusLevel::Info);
+                self.set_status(&t_to("status.saved", &get_locale()), StatusLevel::Info);
             }
-            Err(e) => self.set_status(&format!("保存失败：{e}"), StatusLevel::Error),
+            Err(e) => self.set_status(
+                &t_to("err.save_failed", &get_locale()).replace("{0}", &e.to_string()),
+                StatusLevel::Error,
+            ),
         }
     }
 
@@ -768,9 +843,15 @@ impl App {
             self.snapshot();
             // 用 add 追加到数组末尾
             if let Err(e) = engine_add(&mut self.doc, &parent_path, JsonValue::Null) {
-                self.set_status(&format!("添加失败: {e}"), StatusLevel::Error);
+                self.set_status(
+                    &t_to("err.add_failed", &get_locale()).replace("{0}", &e.to_string()),
+                    StatusLevel::Error,
+                );
             } else {
-                self.set_status("已添加空元素", StatusLevel::Info);
+                self.set_status(
+                    &t_to("tui.status.added_null", &get_locale()),
+                    StatusLevel::Info,
+                );
                 // 展开父节点
                 self.expanded.insert(parent_path.clone());
             }
@@ -800,7 +881,10 @@ impl App {
 
         // 对象模式：key 不能为空
         if key_buffer.is_empty() {
-            self.set_status("需要输入字段名", StatusLevel::Error);
+            self.set_status(
+                &t_to("tui.status.need_field_name", &get_locale()),
+                StatusLevel::Error,
+            );
             return;
         }
 
@@ -815,7 +899,10 @@ impl App {
 
         // 添加值默认为 null
         if let Err(e) = engine_set(&mut self.doc, &target_path, JsonValue::Null) {
-            self.set_status(&format!("添加失败: {e}"), StatusLevel::Error);
+            self.set_status(
+                &t_to("err.add_failed", &get_locale()).replace("{0}", &e.to_string()),
+                StatusLevel::Error,
+            );
             return;
         }
 
@@ -832,7 +919,7 @@ impl App {
             self.list_state.select(Some(idx));
         }
 
-        self.set_status("已添加", StatusLevel::Info);
+        self.set_status(&t_to("status.added", &get_locale()), StatusLevel::Info);
     }
 
     /// 取消添加节点。

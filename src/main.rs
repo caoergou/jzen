@@ -1,6 +1,7 @@
 mod cli;
 mod command;
 mod engine;
+mod i18n;
 mod tui;
 
 use clap::Parser;
@@ -28,7 +29,8 @@ fn main() {
         None => {
             let file = require_file(cli.file);
             if let Err(e) = tui::run_tui(file) {
-                eprintln!("TUI 错误：{e}");
+                let locale = i18n::get_locale();
+                eprintln!("{}: {e}", i18n::t_to("main.tui_error", &locale));
                 std::process::exit(1);
             }
         }
@@ -37,7 +39,8 @@ fn main() {
 
 fn require_file(file: Option<std::path::PathBuf>) -> std::path::PathBuf {
     file.unwrap_or_else(|| {
-        eprintln!("错误：需要指定 JSON 文件路径");
+        let locale = i18n::get_locale();
+        eprintln!("{}", i18n::t_to("main.need_file", &locale));
         std::process::exit(1);
     })
 }
