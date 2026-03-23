@@ -42,8 +42,13 @@ pub enum AppMode {
         /// 光标在缓冲区中的字节位置。
         cursor_pos: usize,
     },
-    /// 等待确认剥离注释。
-    ConfirmStripComments,
+    /// 帮助面板。
+    Help,
+    /// 退出确认（文件已修改时）。
+    ConfirmQuit {
+        /// 上一次按键是否是 Escape（用于检测连续按两次）
+        last_was_escape: bool,
+    },
     /// 保存前预览 diff
     ConfirmSave {
         /// 原始内容（保存前的状态）
@@ -85,7 +90,6 @@ pub enum AppMode {
 pub enum ContextAction {
     Edit,
     AddChild,
-    AddSibling,
     Delete,
     CopyKey,
     CopyValue,
@@ -99,7 +103,6 @@ impl ContextAction {
         &[
             ContextAction::Edit,
             ContextAction::AddChild,
-            ContextAction::AddSibling,
             ContextAction::Delete,
             ContextAction::CopyKey,
             ContextAction::CopyValue,
@@ -115,13 +118,26 @@ impl ContextAction {
         match self {
             ContextAction::Edit => t_to("tui.action.edit", &locale),
             ContextAction::AddChild => t_to("tui.action.add_child", &locale),
-            ContextAction::AddSibling => t_to("tui.action.add_sibling", &locale),
             ContextAction::Delete => t_to("tui.action.delete", &locale),
             ContextAction::CopyKey => t_to("tui.action.copy_key", &locale),
             ContextAction::CopyValue => t_to("tui.action.copy_value", &locale),
             ContextAction::CopyPath => t_to("tui.action.copy_path", &locale),
             ContextAction::ExpandAll => t_to("tui.action.expand_all", &locale),
             ContextAction::CollapseAll => t_to("tui.action.collapse_all", &locale),
+        }
+    }
+
+    /// 获取操作对应的快捷键（单个字符）
+    pub fn shortcut(&self) -> char {
+        match self {
+            ContextAction::Edit => 'e',
+            ContextAction::AddChild => 'a',
+            ContextAction::Delete => 'd',
+            ContextAction::CopyKey => 'c',
+            ContextAction::CopyValue => 'v',
+            ContextAction::CopyPath => 'p',
+            ContextAction::ExpandAll => '*',
+            ContextAction::CollapseAll => '-',
         }
     }
 }
@@ -167,6 +183,8 @@ pub struct App {
     pub last_click_row: Option<usize>,
     // 右键菜单悬停支持
     pub menu_hover_row: Option<usize>,
+    // 退出确认：追踪上次按键是否是 Escape（用于检测连续按两次）
+    pub last_escape_time: Option<std::time::Instant>,
 }
 
 impl App {
@@ -211,6 +229,7 @@ impl App {
             last_click_time: None,
             last_click_row: None,
             menu_hover_row: None,
+            last_escape_time: None,
         })
     }
 
@@ -607,20 +626,6 @@ impl App {
                 self.mode = AppMode::Normal;
                 self.start_add_node();
             }
-            ContextAction::AddSibling => {
-                // 添加兄弟节点：先获取父节点路径
-                self.mode = AppMode::Normal;
-                if let Some(parent) = line.path.rfind('.') {
-                    let parent_path = &line.path[..parent];
-                    if !parent_path.is_empty() {
-                        // TODO: 实现添加兄弟节点
-                        self.set_status(
-                            &t_to("tui.status.add_sibling_wip", &get_locale()),
-                            StatusLevel::Info,
-                        );
-                    }
-                }
-            }
             ContextAction::Delete => {
                 self.delete_current();
                 self.mode = AppMode::Normal;
@@ -822,14 +827,7 @@ impl App {
         self.set_status(&t_to("tui.status.cancel_save", &get_locale()), StatusLevel::Info);
     }
 
-    /// 确认剥离注释后保存。
-    pub fn confirm_save_strip_comments(&mut self) {
-        self.has_comments = false;
-        self.do_save();
-        self.mode = AppMode::Normal;
-    }
-
-    fn do_save(&mut self) {
+    pub fn do_save(&mut self) {
         let content = format_pretty(&self.doc, &FormatOptions::default());
         match crate::command::write_file_atomic(&self.file_path, &content) {
             Ok(()) => {
