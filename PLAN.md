@@ -1,4 +1,4 @@
-# je — JSON 编辑器：项目计划
+# jed — JSON 编辑器：项目计划
 
 ## 项目概述
 
@@ -27,13 +27,13 @@
 ## 两种模式，一个工具
 
 ```bash
-je settings.json                  # TUI 模式（人类使用）
-je settings.json get .key         # 命令模式（Agent/脚本使用）
+jed settings.json                  # TUI 模式（人类使用）
+jed settings.json get .key         # 命令模式（Agent/脚本使用）
 ```
 
 ### 命令模式对 Agent 的价值
 
-| 传统方式（Agent 读写 JSON） | je 命令模式 |
+| 传统方式（Agent 读写 JSON） | jed 命令模式 |
 |--------------------------|------------|
 | Read 整个文件进入 context | `get .key` → 只返回目标值 |
 | 修改后 Write 整个文件 | `set .key val` → 返回 `ok` |
@@ -47,7 +47,7 @@ je settings.json get .key         # 命令模式（Agent/脚本使用）
 
 ### TUI 模式
 
-通过 `je <文件>` 启动（无子命令）。
+通过 `jed <文件>` 启动（无子命令）。
 
 - 树形视图，支持展开/折叠（`l`/`h` 或方向键）
 - 语法高亮（key、字符串、数字、布尔、null 不同颜色）
@@ -62,44 +62,44 @@ je settings.json get .key         # 命令模式（Agent/脚本使用）
 
 ### 命令模式（Agent 友好）
 
-所有命令格式：`je <文件> <子命令> [参数] [选项]`
+所有命令格式：`jed <文件> <子命令> [参数] [选项]`
 
 #### 读取操作
 
 ```bash
-je file.json get <路径>           # 获取路径处的值
-je file.json keys <路径>          # 列出对象的所有 key
-je file.json len <路径>           # 数组/对象的长度
-je file.json type <路径>          # 路径处值的类型
-je file.json exists <路径>        # 路径存在则 exit 0，不存在则 exit 2
-je file.json schema               # 推断结构（紧凑，不含实际值）
-je file.json check                # 校验，错误输出到 stderr
+jed file.json get <路径>           # 获取路径处的值
+jed file.json keys <路径>          # 列出对象的所有 key
+jed file.json len <路径>           # 数组/对象的长度
+jed file.json type <路径>          # 路径处值的类型
+jed file.json exists <路径>        # 路径存在则 exit 0，不存在则 exit 2
+jed file.json schema               # 推断结构（紧凑，不含实际值）
+jed file.json check                # 校验，错误输出到 stderr
 ```
 
 #### 写入操作
 
 ```bash
-je file.json set <路径> <值>      # 设置值（路径不存在则自动创建）
-je file.json del <路径>           # 删除 key 或数组元素
-je file.json add <路径> <值>      # 追加到数组，或合并到对象
-je file.json patch '<json>'       # 一次性批量操作
-je file.json mv <源路径> <目标路径> # 移动/重命名 key
+jed file.json set <路径> <值>      # 设置值（路径不存在则自动创建）
+jed file.json del <路径>           # 删除 key 或数组元素
+jed file.json add <路径> <值>      # 追加到数组，或合并到对象
+jed file.json patch '<json>'       # 一次性批量操作
+jed file.json mv <源路径> <目标路径> # 移动/重命名 key
 ```
 
 #### 格式化/修复
 
 ```bash
-je file.json fmt                  # 格式化（美化输出），原地修改
-je file.json fix                  # 自动修复格式错误，然后格式化
-je file.json fix --dry-run        # 预览将修复的内容，不实际写入
-je file.json minify               # 压缩为最小 JSON，原地修改
+jed file.json fmt                  # 格式化（美化输出），原地修改
+jed file.json fix                  # 自动修复格式错误，然后格式化
+jed file.json fix --dry-run        # 预览将修复的内容，不实际写入
+jed file.json minify               # 压缩为最小 JSON，原地修改
 ```
 
 #### 工具命令
 
 ```bash
-je file.json diff <other.json>    # 对比两个 JSON 文件的结构差异
-je file.json tui                  # 显式启动 TUI 模式
+jed file.json diff <other.json>    # 对比两个 JSON 文件的结构差异
+jed file.json tui                  # 显式启动 TUI 模式
 ```
 
 ---
@@ -152,7 +152,7 @@ je file.json tui                  # 显式启动 TUI 模式
 
 ## 错误检测与自动修复
 
-`je fix` 处理最常见的 JSON 格式错误：
+`jed fix` 处理最常见的 JSON 格式错误：
 
 | 错误类型 | 示例 | 修复方式 |
 |----------|------|----------|
@@ -185,7 +185,7 @@ je file.json tui                  # 显式启动 TUI 模式
 ## 项目目录结构
 
 ```
-je/
+jed/
 ├── Cargo.toml
 ├── README.md
 ├── PLAN.md               # 本文件

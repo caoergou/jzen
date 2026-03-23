@@ -97,8 +97,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: je-${{ matrix.target }}
+          name: jed-${{ matrix.target }}
           path: |
-            target/${{ matrix.target }}/release/je
-            target/${{ matrix.target }}/release/je.exe
+            target/${{ matrix.target }}/release/jed
+            target/${{ matrix.target }}/release/jed.exe
           if-no-files-found: ignore

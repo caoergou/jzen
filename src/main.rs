@@ -18,7 +18,7 @@ fn main() {
             use clap::CommandFactory;
             use clap_complete::generate;
             let mut cmd = Cli::command();
-            generate(shell, &mut cmd, "je", &mut std::io::stdout());
+            generate(shell, &mut cmd, "jed", &mut std::io::stdout());
         }
 
         Some(cmd) => {

@@ -63,7 +63,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 fn render_tree(frame: &mut Frame, app: &mut App, area: Rect, lines: &[TreeLine]) {
     let modified_marker = if app.modified { " [*]" } else { "" };
     let title = format!(
-        " je: {}{modified_marker} ",
+        " jed: {}{modified_marker} ",
         app.file_path
             .file_name()
             .unwrap_or_default()

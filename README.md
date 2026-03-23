@@ -1,4 +1,4 @@
-# je — JSON Editor
+# Jed — JSON Editor
 
 A dual-interface JSON tool built for **humans and AI agents** alike.
 
@@ -7,7 +7,7 @@ A dual-interface JSON tool built for **humans and AI agents** alike.
 
 Same binary. Two modes. One engine.
 
-[![CI](https://github.com/caoergou/je/actions/workflows/ci.yml/badge.svg)](https://github.com/caoergou/je/actions/workflows/ci.yml)
+[![CI](https://github.com/caoergou/jed/actions/workflows/ci.yml/badge.svg)](https://github.com/caoergou/jed/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -16,12 +16,12 @@ Same binary. Two modes. One engine.
 
 ```bash
 # TUI mode (human)
-je config.json
+jed config.json
 
 # Command mode (agent / script)
-je config.json get .name
-je config.json set .name '"Bob"'
-je config.json fix --strip-comments
+jed config.json get .name
+jed config.json set .name '"Bob"'
+jed config.json fix --strip-comments
 ```
 
 ---
@@ -30,34 +30,34 @@ je config.json fix --strip-comments
 
 ### Pre-built binaries (recommended)
 
-Download from the [Releases](https://github.com/caoergou/je/releases) page, or use the install script:
+Download from the [Releases](https://github.com/caoergou/jed/releases) page, or use the install script:
 
 ```bash
 # Linux / macOS — auto-detects platform and installs to /usr/local/bin
-curl -fsSL https://github.com/caoergou/je/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/caoergou/jed/releases/latest/download/install.sh | sh
 ```
 
 ### From crates.io
 
 ```bash
-cargo install je-editor
+cargo install jed-json
 ```
 
 ### From source (requires Rust)
 
 ```bash
-cargo install --git https://github.com/caoergou/je
+cargo install --git https://github.com/caoergou/jed
 ```
 
 | Platform | Binary |
 |----------|--------|
-| Linux x86_64 | `je-linux-x86_64` |
-| Linux aarch64 | `je-linux-aarch64` |
-| macOS x86_64 | `je-macos-x86_64` |
-| macOS Apple Silicon | `je-macos-aarch64` |
-| Windows x86_64 | `je-windows-x86_64.exe` |
+| Linux x86_64 | `jed-linux-x86_64` |
+| Linux aarch64 | `jed-linux-aarch64` |
+| macOS x86_64 | `jed-macos-x86_64` |
+| macOS Apple Silicon | `jed-macos-aarch64` |
+| Windows x86_64 | `jed-windows-x86_64.exe` |
 
-Place the binary somewhere on your `$PATH` and rename it to `je`.
+Place the binary somewhere on your `$PATH` and rename it to `jed`.
 
 ---
 
@@ -66,7 +66,7 @@ Place the binary somewhere on your `$PATH` and rename it to `je`.
 Launch by passing only a filename:
 
 ```bash
-je settings.json
+jed settings.json
 ```
 
 | Key | Action |
@@ -93,26 +93,26 @@ Designed for **AI agents** to read and write JSON with minimal token usage.
 ### Read
 
 ```bash
-je file.json get .key              # get value at path
-je file.json get '.servers[0].host'
-je file.json keys .                # list all top-level keys
-je file.json len .tags             # array / object length
-je file.json type .count           # type name: string|number|boolean|null|object|array
-je file.json exists .key           # exit 0=exists, 2=not found
-je file.json schema                # infer structure (no values)
-je file.json check                 # validate; errors to stderr
+jed file.json get .key              # get value at path
+jed file.json get '.servers[0].host'
+jed file.json keys .                # list all top-level keys
+jed file.json len .tags             # array / object length
+jed file.json type .count           # type name: string|number|boolean|null|object|array
+jed file.json exists .key           # exit 0=exists, 2=not found
+jed file.json schema                # infer structure (no values)
+jed file.json check                 # validate; errors to stderr
 ```
 
 ### Write
 
 ```bash
-je file.json set .name '"Bob"'     # set value
-je file.json del .legacy           # delete key
-je file.json add .tags '"go"'      # append to array
-je file.json mv .oldKey .newKey    # rename key
+jed file.json set .name '"Bob"'     # set value
+jed file.json del .legacy           # delete key
+jed file.json add .tags '"go"'      # append to array
+jed file.json mv .oldKey .newKey    # rename key
 
 # Batch (JSON Patch RFC 6902) — one call, atomic
-je file.json patch '[
+jed file.json patch '[
   {"op": "replace", "path": ".name",    "value": "Bob"},
   {"op": "add",     "path": ".tags/-",  "value": "go"},
   {"op": "remove",  "path": ".legacy"}
@@ -122,11 +122,11 @@ je file.json patch '[
 ### Format / Repair
 
 ```bash
-je file.json fmt                   # pretty-print in place
-je file.json fix --strip-comments  # auto-fix JSONC, trailing commas, etc.
-je file.json fix --dry-run         # preview repairs without writing
-je file.json minify                # compact JSON
-je file.json diff other.json       # structural diff
+jed file.json fmt                   # pretty-print in place
+jed file.json fix --strip-comments  # auto-fix JSONC, trailing commas, etc.
+jed file.json fix --dry-run         # preview repairs without writing
+jed file.json minify                # compact JSON
+jed file.json diff other.json       # structural diff
 ```
 
 ### Exit codes
@@ -140,9 +140,9 @@ je file.json diff other.json       # structural diff
 
 ---
 
-## Why je for AI Agents?
+## Why Jed for AI Agents?
 
-| Traditional approach | je command mode |
+| Traditional approach | jed command mode |
 |----------------------|-----------------|
 | Read full file into context | `get .key` → only the target value |
 | Rewrite full file after change | `set .key val` → returns `ok` |
@@ -154,19 +154,19 @@ je file.json diff other.json       # structural diff
 
 ```bash
 # 1. Check file structure without reading values
-je ~/.claude/settings.json schema
+jed ~/.claude/settings.json schema
 
 # 2. Check if a server exists
-je ~/.claude/settings.json exists .mcpServers.github
+jed ~/.claude/settings.json exists .mcpServers.github
 
 # 3. Read only the specific value needed
-je ~/.claude/settings.json get .mcpServers.github.command
+jed ~/.claude/settings.json get .mcpServers.github.command
 
 # 4. Update a single field
-je ~/.claude/settings.json set .mcpServers.github.env.TOKEN '"ghp_xxxx"'
+jed ~/.claude/settings.json set .mcpServers.github.env.TOKEN '"ghp_xxxx"'
 
 # 5. Batch update (one call)
-je ~/.claude/settings.json patch '[
+jed ~/.claude/settings.json patch '[
   {"op": "replace", "path": ".defaultMode", "value": "acceptEdits"},
   {"op": "add",     "path": ".mcpServers.github.enabled", "value": true}
 ]'
@@ -176,7 +176,7 @@ je ~/.claude/settings.json patch '[
 
 ## Auto-fix Capabilities
 
-`je fix` repairs the most common JSON format errors found in the wild:
+`jed fix` repairs the most common JSON format errors found in the wild:
 
 | Error | Example | Fix |
 |-------|---------|-----|
@@ -209,10 +209,10 @@ Uses jq-inspired path syntax:
 ## Building from Source
 
 ```bash
-git clone https://github.com/caoergou/je
-cd je
+git clone https://github.com/caoergou/jed
+cd jed
 cargo build --release
-./target/release/je --version
+./target/release/jed --version
 ```
 
 ---

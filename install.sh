@@ -1,11 +1,11 @@
 #!/bin/sh
-# je — JSON Editor installer
-# Usage: curl -fsSL https://github.com/caoergou/je/releases/latest/download/install.sh | sh
+# Jed — JSON Editor installer
+# Usage: curl -fsSL https://github.com/caoergou/jed/releases/latest/download/install.sh | sh
 
 set -e
 
-REPO="caoergou/je"
-BIN_NAME="je"
+REPO="caoergou/jed"
+BIN_NAME="jed"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
 # Detect platform
@@ -15,21 +15,21 @@ ARCH="$(uname -m)"
 case "$OS" in
   Linux)
     case "$ARCH" in
-      x86_64)  ASSET="je-linux-x86_64" ;;
-      aarch64) ASSET="je-linux-aarch64" ;;
+      x86_64)  ASSET="jed-linux-x86_64" ;;
+      aarch64) ASSET="jed-linux-aarch64" ;;
       *)       echo "Unsupported architecture: $ARCH" && exit 1 ;;
     esac
     ;;
   Darwin)
     case "$ARCH" in
-      x86_64)  ASSET="je-macos-x86_64" ;;
-      arm64)   ASSET="je-macos-aarch64" ;;
+      x86_64)  ASSET="jed-macos-x86_64" ;;
+      arm64)   ASSET="jed-macos-aarch64" ;;
       *)       echo "Unsupported architecture: $ARCH" && exit 1 ;;
     esac
     ;;
   *)
     echo "Unsupported OS: $OS"
-    echo "For Windows, download je-windows-x86_64.exe from:"
+    echo "For Windows, download jed-windows-x86_64.exe from:"
     echo "  https://github.com/$REPO/releases/latest"
     exit 1
     ;;
