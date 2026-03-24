@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::engine::{format_compact, JsonValue};
+use crate::engine::{JsonValue, format_compact};
 
 /// Per-invocation context: which command is running and what output mode.
 pub struct Ctx {

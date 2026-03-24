@@ -2,7 +2,9 @@ use std::path::Path;
 
 use crate::{
     command::{exit_code, load_lenient, read_file},
-    engine::{DiffEntry, DiffKind, JsonValue, PathError, exists, get, infer_schema, structural_diff},
+    engine::{
+        DiffEntry, DiffKind, JsonValue, PathError, exists, get, infer_schema, structural_diff,
+    },
     i18n::{get_locale, t_to},
     output::Ctx,
 };
@@ -257,10 +259,7 @@ pub fn cmd_diff(file: &Path, other: &Path, ctx: &Ctx) -> Result<i32, Box<dyn std
     ];
 
     if ctx.json {
-        let diff_json: Vec<serde_json::Value> = entries
-            .iter()
-            .map(diff_entry_to_json)
-            .collect();
+        let diff_json: Vec<serde_json::Value> = entries.iter().map(diff_entry_to_json).collect();
         ctx.print_raw_with_actions(
             serde_json::json!({"identical": false, "diff": diff_json}),
             &actions,
