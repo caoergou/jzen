@@ -1,0 +1,39 @@
+{
+  "name": "jsonfox-demo",
+  "version": "0.1.0",
+  "description": "A test configuration file for jed TUI",
+  "features": {
+    "darkMode": false,
+    "autoSave": true,
+    "theme": "default"
+  },
+  "servers": [
+    {
+      "name": "production",
+      "host": "api.example.com.5",
+      "port": 8089,
+      "enabled": false
+    },
+    {
+      "name": "staging",
+      "host": "staging.example.com",
+      "port": 3000,
+      "enabled": true
+    }
+  ],
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "myapp_dev",
+    "poolSize": 10
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": [
+      "stdout",
+      "file",
+      "test"
+    ]
+  }
+}
