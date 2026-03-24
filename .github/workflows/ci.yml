@@ -100,8 +100,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: jed-${{ matrix.target }}
+          name: jzen-${{ matrix.target }}
           path: |
-            target/${{ matrix.target }}/release/jed
-            target/${{ matrix.target }}/release/jed.exe
+            target/${{ matrix.target }}/release/jzen
+            target/${{ matrix.target }}/release/jzen.exe
           if-no-files-found: ignore

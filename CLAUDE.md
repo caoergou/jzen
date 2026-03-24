@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`jed` is a dual-interface JSON editor:
+`jzen` is a dual-interface JSON editor:
 - **TUI mode** (human): tree navigation, inline editing, syntax highlighting via ratatui
 - **Command mode** (AI agents): path-based CLI commands with minimal token output
 
@@ -68,7 +68,7 @@ main.rs → cli.rs (arg parsing)
 
 ## Auto-fix Capabilities
 
-The `jed fix` command repairs common JSON format errors:
+The `jzen fix` command repairs common JSON format errors:
 - Trailing commas
 - Single quotes → double quotes
 - Unquoted keys

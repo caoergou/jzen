@@ -1,12 +1,12 @@
 [package]
-name = "jed"
+name = "jzen"
 version = "0.1.0"
 edition = "2024"
-description = "Jed — A dual-interface JSON editor for humans and AI agents"
+description = "Jzen — A dual-interface JSON editor for humans and AI agents"
 license = "MIT"
 
 [[bin]]
-name = "jed"
+name = "jzen"
 path = "src/main.rs"
 
 [dependencies]
