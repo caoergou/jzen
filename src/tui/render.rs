@@ -229,7 +229,10 @@ fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
             (key("↑↓"), t_to("tui.hint.move", &locale)),
             (key("Enter"), t_to("tui.help.edit_value", &locale)),
             (key("N"), t_to("tui.hint.new", &locale)),
+            (key("+"), t_to("tui.action.expand_all", &locale)),
+            (key("-"), t_to("tui.action.collapse_all", &locale)),
             (combo(ctrl, "S"), t_to("tui.hint.save", &locale)),
+            (key("F2"), t_to("tui.hint.menu", &locale)),
             (key("F1"), t_to("tui.hint.help", &locale)),
         ],
         AppMode::Edit { value_type, .. } => {
@@ -949,6 +952,7 @@ fn render_context_menu(frame: &mut Frame, app: &App, area: Rect) {
 
     let locale = get_locale();
     let actions = ContextAction::all();
+
     // 菜单宽度增加以容纳快捷键提示
     let menu_width = 34u16;
     let menu_height = actions.len() as u16 + 2;
