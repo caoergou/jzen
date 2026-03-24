@@ -226,7 +226,7 @@ fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
     // 使用格式化后的键位
     let hints: Vec<(String, String)> = match &app.mode {
         AppMode::Normal => vec![
-            (key("↑") + " / " + &key("↓"), t_to("tui.hint.move", &locale)),
+            (key("↑↓"), t_to("tui.hint.move", &locale)),
             (key("Enter"), t_to("tui.hint.edit", &locale)),
             (key("Space"), t_to("tui.hint.expand", &locale)),
             (key("N"), t_to("tui.hint.new", &locale)),
@@ -256,10 +256,7 @@ fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
             (key("Enter"), t_to("tui.hint.next_match", &locale)),
             (key("Esc"), t_to("tui.hint.exit", &locale)),
         ],
-        AppMode::Help => vec![(
-            key("F1") + " / " + &key("Esc"),
-            t_to("tui.hint.close", &locale),
-        )],
+        AppMode::Help => vec![(key("Esc"), t_to("tui.hint.close", &locale))],
         AppMode::ConfirmQuit { .. } => vec![
             (key("Y"), t_to("tui.hint.save_quit", &locale)),
             (key("N"), t_to("tui.hint.no_save_quit", &locale)),
@@ -273,23 +270,20 @@ fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
             (key("Esc"), t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::ContextMenu { .. } => vec![
-            (
-                key("↑") + " / " + &key("↓"),
-                t_to("tui.hint.select", &locale),
-            ),
+            (key("↑↓"), t_to("tui.hint.select", &locale)),
             (key("Enter"), t_to("tui.hint.execute", &locale)),
             (key("Esc"), t_to("tui.hint.exit", &locale)),
         ],
     };
 
-    // 构建提示条内容：每个快捷键用 [key] 形式显示
+    // 构建提示条内容：快捷键已由 key() 函数添加 [ ] 括号
     let mut spans: Vec<Span> = Vec::new();
     for (i, (key, desc)) in hints.iter().enumerate() {
         if i > 0 {
             spans.push(Span::styled("  ", Style::default().fg(Color::DarkGray)));
         }
         spans.push(Span::styled(
-            format!("[{key}]"),
+            key.clone(), // key 已包含 [ ] 括号
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
@@ -480,48 +474,112 @@ fn render_add_node_overlay(frame: &mut Frame, app: &App, area: Rect) {
         is_array: _,
         key_buffer,
         key_cursor,
+        selecting_type,
+        type_selected,
     } = &app.mode
     else {
         return;
     };
 
-    // 对象模式：只输入 key
-    let overlay_height = 3u16;
+    let locale = get_locale();
+
+    // 阶段1：输入 key
+    if !*selecting_type {
+        let overlay_height = 3u16;
+        if area.height < overlay_height + 2 {
+            return;
+        }
+        let overlay_area = Rect {
+            x: area.x + 1,
+            y: area.y + area.height - overlay_height - 1,
+            width: area.width.saturating_sub(2),
+            height: overlay_height,
+        };
+
+        frame.render_widget(Clear, overlay_area);
+
+        let display_buf = format!(" {key_buffer} ");
+        let title = format!(
+            " {} {} ",
+            t_to("tui.overlay.add_field", &locale),
+            parent_path,
+        );
+
+        let para = Paragraph::new(display_buf)
+            .block(
+                Block::default()
+                    .title(Span::styled(title, Style::default().fg(Color::Green)))
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Green)),
+            )
+            .style(Style::default().fg(Color::White));
+
+        frame.render_widget(para, overlay_area);
+
+        // 光标位置
+        let cursor_x = overlay_area.x + 1 + (*key_cursor as u16).min(overlay_area.width - 3);
+        let cursor_y = overlay_area.y + 1;
+        frame.set_cursor_position((cursor_x, cursor_y));
+        return;
+    }
+
+    // 阶段2：类型选择
+    let overlay_height = 6u16;
     if area.height < overlay_height + 2 {
         return;
     }
+    let overlay_width = 36u16;
     let overlay_area = Rect {
-        x: area.x + 1,
-        y: area.y + area.height - overlay_height - 1,
-        width: area.width.saturating_sub(2),
+        x: area.x + (area.width - overlay_width) / 2,
+        y: area.y + (area.height - overlay_height) / 2,
+        width: overlay_width,
         height: overlay_height,
     };
 
     frame.render_widget(Clear, overlay_area);
 
-    let locale = get_locale();
-    let display_buf = format!(" {key_buffer} ");
-    let title = format!(
-        " {} {} ",
-        t_to("tui.overlay.add_field", &locale),
-        parent_path,
-    );
+    // 类型选项
+    #[allow(clippy::useless_vec)]
+    let type_options = vec![
+        ("null", "null (默认)"),
+        ("{}", "空对象"),
+        ("[]", "空数组"),
+    ];
 
-    let para = Paragraph::new(display_buf)
-        .block(
-            Block::default()
-                .title(Span::styled(title, Style::default().fg(Color::Green)))
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Green)),
-        )
+    let title = format!(" {} ", t_to("tui.overlay.select_type", &locale));
+
+    let block = Block::default()
+        .title(Span::styled(title, Style::default().fg(Color::Green)))
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Green));
+
+    let mut lines = Vec::new();
+    for (i, (symbol, label)) in type_options.iter().enumerate() {
+        let is_selected = i == *type_selected;
+        let prefix = if is_selected { "▶ " } else { "  " };
+        let style = if is_selected {
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        };
+        let locale_label = if *label == "null (默认)" {
+            t_to("tui.overlay.type_null", &locale)
+        } else if *label == "空对象" {
+            t_to("tui.overlay.type_object", &locale)
+        } else {
+            t_to("tui.overlay.type_array", &locale)
+        };
+        lines.push(Line::from(vec![
+            Span::styled(format!("{prefix}[{symbol}]"), style),
+            Span::styled(format!(" {locale_label}"), Style::default().fg(Color::White)),
+        ]));
+    }
+
+    let para = Paragraph::new(lines)
+        .block(block)
         .style(Style::default().fg(Color::White));
 
     frame.render_widget(para, overlay_area);
-
-    // 光标位置
-    let cursor_x = overlay_area.x + 1 + (*key_cursor as u16).min(overlay_area.width - 3);
-    let cursor_y = overlay_area.y + 1;
-    frame.set_cursor_position((cursor_x, cursor_y));
 }
 
 // ── 退出确认覆盖层 ───────────────────────────────────────────────────────────
@@ -671,6 +729,29 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
         "Ctrl"
     };
 
+    // 辅助宏：创建表格化的帮助行
+    macro_rules! help_row {
+        ($key_str:expr, $desc:expr, $is_combo:expr) => {{
+            let key_span = if $is_combo {
+                combo(ctrl, $key_str)
+            } else {
+                key($key_str)
+            };
+            let key_len = if $is_combo {
+                $key_str.len() + ctrl.len() + 4 // [Ctrl]+[X]
+            } else {
+                $key_str.len() + 2 // [X]
+            };
+            let padding = 12usize.saturating_sub(key_len);
+            Line::from(vec![
+                Span::raw("  "),
+                key_span,
+                Span::raw(" ".repeat(padding)),
+                Span::styled($desc, Style::default().fg(Color::White)),
+            ])
+        }};
+    }
+
     let help_content: Vec<Line> = vec![
         Line::from(""),
         Line::from(Span::styled(
@@ -688,48 +769,15 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )),
         // up/down
-        Line::from(vec![
-            Span::raw("  "),
-            key("↑"),
-            Span::raw("/"),
-            key("↓"),
-            Span::raw("  "),
-            Span::styled(move_up_down, Style::default().fg(Color::White)),
-        ]),
+        help_row!("↑/↓", &move_up_down, false),
         // left/right
-        Line::from(vec![
-            Span::raw("  "),
-            key("←"),
-            Span::raw("/"),
-            key("→"),
-            Span::raw("  "),
-            Span::styled(collapse_expand, Style::default().fg(Color::White)),
-        ]),
+        help_row!("←/→", &collapse_expand, false),
         // space
-        Line::from(vec![
-            Span::raw("  "),
-            key("Space"),
-            Span::raw("  "),
-            Span::styled(toggle_expand, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Space", &toggle_expand, false),
         // PgUp/PgDn
-        Line::from(vec![
-            Span::raw("  "),
-            key("PgUp"),
-            Span::raw("/"),
-            key("PgDn"),
-            Span::raw("  "),
-            Span::styled(quick_scroll, Style::default().fg(Color::White)),
-        ]),
+        help_row!("PgUp/PgDn", &quick_scroll, false),
         // Home/End
-        Line::from(vec![
-            Span::raw("  "),
-            key("Home"),
-            Span::raw("/"),
-            key("End"),
-            Span::raw(" "),
-            Span::styled(jump_begin_end, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Home/End", &jump_begin_end, false),
         Line::from(""),
         Line::from(Span::styled(
             format!("  {edit}"),
@@ -738,33 +786,13 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )),
         // Enter
-        Line::from(vec![
-            Span::raw("  "),
-            key("Enter"),
-            Span::raw("  "),
-            Span::styled(edit_value, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Enter", &edit_value, false),
         // N
-        Line::from(vec![
-            Span::raw("  "),
-            key("N"),
-            Span::raw("      "),
-            Span::styled(new_node, Style::default().fg(Color::White)),
-        ]),
+        help_row!("N", &new_node, false),
         // Delete
-        Line::from(vec![
-            Span::raw("  "),
-            key("Del"),
-            Span::raw("  "),
-            Span::styled(delete_node, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Del", &delete_node, false),
         // Tab
-        Line::from(vec![
-            Span::raw("  "),
-            key("Tab"),
-            Span::raw("  "),
-            Span::styled(toggle_bool, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Tab", &toggle_bool, false),
         Line::from(""),
         Line::from(Span::styled(
             format!("  {file}"),
@@ -773,40 +801,15 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )),
         // /
-        Line::from(vec![
-            Span::raw("  "),
-            key("/"),
-            Span::raw("      "),
-            Span::styled(search, Style::default().fg(Color::White)),
-        ]),
+        help_row!("/", &search, false),
         // Ctrl+S
-        Line::from(vec![
-            Span::raw("  "),
-            combo(ctrl, "S"),
-            Span::raw("    "),
-            Span::styled(save, Style::default().fg(Color::White)),
-        ]),
+        help_row!("S", &save, true),
         // Ctrl+Z
-        Line::from(vec![
-            Span::raw("  "),
-            combo(ctrl, "Z"),
-            Span::raw("    "),
-            Span::styled(undo, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Z", &undo, true),
         // Ctrl+Y
-        Line::from(vec![
-            Span::raw("  "),
-            combo(ctrl, "Y"),
-            Span::raw("    "),
-            Span::styled(redo, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Y", &redo, true),
         // Ctrl+Q
-        Line::from(vec![
-            Span::raw("  "),
-            combo(ctrl, "Q"),
-            Span::raw("    "),
-            Span::styled(quit, Style::default().fg(Color::White)),
-        ]),
+        help_row!("Q", &quit, true),
         Line::from(""),
         Line::from(Span::styled(
             close_help,
