@@ -210,7 +210,10 @@ fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
     // 使用格式化后的键位
     let hints: Vec<(String, String)> = match &app.mode {
         AppMode::Normal => vec![
-            (format_key("up") + &format_key("down"), t_to("tui.hint.move", &locale)),
+            (
+                format_key("up") + &format_key("down"),
+                t_to("tui.hint.move", &locale),
+            ),
             (format_key("enter"), t_to("tui.hint.edit", &locale)),
             (format_key("space"), t_to("tui.hint.expand", &locale)),
             ("N".to_string(), t_to("tui.hint.new", &locale)),
@@ -251,7 +254,10 @@ fn render_helpbar(frame: &mut Frame, app: &App, area: Rect) {
             (format_key("esc"), t_to("tui.hint.cancel", &locale)),
         ],
         AppMode::ContextMenu { .. } => vec![
-            (format_key("up") + &format_key("down"), t_to("tui.hint.select", &locale)),
+            (
+                format_key("up") + &format_key("down"),
+                t_to("tui.hint.select", &locale),
+            ),
             (format_key("enter"), t_to("tui.hint.execute", &locale)),
             (format_key("esc"), t_to("tui.hint.exit", &locale)),
         ],
@@ -315,10 +321,7 @@ fn render_edit_overlay(frame: &mut Frame, app: &App, area: Rect) {
     // 根据检测结果决定边框颜色
     let (border_color, type_info) = if parse_error.is_some() {
         // 有解析错误，显示为字符串
-        (
-            Color::DarkGray,
-            t_to("tui.status.string_as_str", &locale),
-        )
+        (Color::DarkGray, t_to("tui.status.string_as_str", &locale))
     } else if let Some(detected) = detected_type {
         if detected == "empty" {
             (Color::Yellow, "empty".to_string())
@@ -330,8 +333,8 @@ fn render_edit_overlay(frame: &mut Frame, app: &App, area: Rect) {
             (
                 Color::Yellow,
                 t_to("tui.overlay.type_mismatch", &locale)
-                    .replace("{0}", &detected)
-                    .replace("{1}", value_type),
+                    .replace("{0}", detected.as_str())
+                    .replace("{1}", value_type.as_str()),
             )
         }
     } else {
@@ -390,11 +393,7 @@ fn render_edit_key_overlay(frame: &mut Frame, app: &App, area: Rect) {
 
     let locale = get_locale();
     let display_buf = format!("{buffer} ");
-    let title = format!(
-        " {} {} ",
-        t_to("tui.overlay.rename_key", &locale),
-        path,
-    );
+    let title = format!(" {} {} ", t_to("tui.overlay.rename_key", &locale), path,);
 
     let para = Paragraph::new(display_buf)
         .block(
@@ -554,7 +553,10 @@ fn render_confirm_quit_overlay(frame: &mut Frame, area: Rect) {
                 " [ N ] ",
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ),
-            Span::styled(format!("{quit_no_save}   "), Style::default().fg(Color::White)),
+            Span::styled(
+                format!("{quit_no_save}   "),
+                Style::default().fg(Color::White),
+            ),
             Span::styled(
                 " [ C ] ",
                 Style::default()
@@ -630,10 +632,10 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
     let quit_key = format!("{}+Q", format_key("Ctrl"));
 
     // 预创建带快捷键的字符串（保持固定宽度对齐）
-    let save_line = format!("    [{:^8}]      {save}", save_key);
-    let undo_line = format!("    [{:^8}]      {undo}", undo_key);
-    let redo_line = format!("    [{:^8}]      {redo}", redo_key);
-    let quit_line = format!("    [{:^8}]      {quit}", quit_key);
+    let save_line = format!("    [{save_key:^8}]      {save}");
+    let undo_line = format!("    [{undo_key:^8}]      {undo}");
+    let redo_line = format!("    [{redo_key:^8}]      {redo}");
+    let quit_line = format!("    [{quit_key:^8}]      {quit}");
 
     let help_content: Vec<Line> = vec![
         Line::from(""),
@@ -652,11 +654,21 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
-            format!("    [{}] / [{}]    {}", format_key("up"), format_key("down"), move_up_down),
+            format!(
+                "    [{}] / [{}]    {}",
+                format_key("up"),
+                format_key("down"),
+                move_up_down
+            ),
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
-            format!("    [{}] / [{}]    {}", format_key("left"), format_key("right"), collapse_expand),
+            format!(
+                "    [{}] / [{}]    {}",
+                format_key("left"),
+                format_key("right"),
+                collapse_expand
+            ),
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
@@ -664,11 +676,21 @@ fn render_help_panel(frame: &mut Frame, area: Rect) {
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
-            format!("    [{:^6}] / [{:^6}]  {}", format_key("PageUp"), format_key("PageDown"), quick_scroll),
+            format!(
+                "    [{:^6}] / [{:^6}]  {}",
+                format_key("PageUp"),
+                format_key("PageDown"),
+                quick_scroll
+            ),
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
-            format!("    [{:^6}] / [{:^6}] {}", format_key("Home"), format_key("End"), jump_begin_end),
+            format!(
+                "    [{:^6}] / [{:^6}] {}",
+                format_key("Home"),
+                format_key("End"),
+                jump_begin_end
+            ),
             Style::default().fg(Color::White),
         )),
         Line::from(""),
