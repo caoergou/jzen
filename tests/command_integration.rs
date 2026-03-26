@@ -12,7 +12,7 @@ fn get_jzen_binary() -> PathBuf {
 }
 
 fn create_temp_json(content: &str) -> tempfile::NamedTempFile {
-    let mut tmp = tempfile::NamedTempFile::new().expect("Failed to create temp file");
+    let tmp = tempfile::NamedTempFile::new().expect("Failed to create temp file");
     fs::write(tmp.path(), content).expect("Failed to write temp file");
     tmp
 }
@@ -53,7 +53,7 @@ fn test_get_array_element() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("b"));
+    assert!(stdout.contains('b'));
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn test_set_number_value() {
 
 #[test]
 fn test_set_creates_new_key() {
-    let tmp = create_temp_json(r#"{}"#);
+    let tmp = create_temp_json(r"{}");
     let output = Command::new(get_jzen_binary())
         .args([
             "set",
@@ -134,7 +134,7 @@ fn test_add_to_array() {
 
     assert!(output.status.success());
     let content = fs::read_to_string(tmp.path()).expect("Failed to read file");
-    assert!(content.contains("3"));
+    assert!(content.contains('3'));
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn test_fix_trailing_comma() {
 
 #[test]
 fn test_fix_single_quotes() {
-    let tmp = create_temp_json(r#"{'name': 'test'}"#);
+    let tmp = create_temp_json(r"{'name': 'test'}");
     let output = Command::new(get_jzen_binary())
         .args(["fix", tmp.path().to_str().unwrap()])
         .output()
@@ -227,7 +227,7 @@ fn test_check_valid_json() {
 
 #[test]
 fn test_check_invalid_json() {
-    let mut tmp = tempfile::NamedTempFile::new().expect("Failed to create temp file");
+    let tmp = tempfile::NamedTempFile::new().expect("Failed to create temp file");
     fs::write(tmp.path(), r#"{"broken": }"#).expect("Failed to write temp file");
 
     let output = Command::new(get_jzen_binary())
